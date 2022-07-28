@@ -1,0 +1,5 @@
+{
+    "haplohiv_folder": "/hpc/dla_lti/dvanginneken/HaploHIV_Daphne/haplohiv3/patient3_out/",
+    "output_dir": "patient3",
+    "mastertable": "/hpc/dla_lti/dvanginneken/MergedTimepoints_PredictHaplo/Mastertable_timepoints.tsv"
+}
