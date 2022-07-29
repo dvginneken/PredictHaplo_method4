@@ -21,13 +21,21 @@ rule concatenate:
         cat $files > {output}
         """ 
 
-rule align:
+rule dealign:
     input:
         "{prefix}/consensus/{name}_concat.fa"
     output:
+        "{prefix}/consensus/{name}_dealigned.fa"
+    shell:
+        "seqkit seq -g {input} > {output}" 
+
+rule align:
+    input:
+        "{prefix}/consensus/{name}_dealigned.fa"
+    output:
         "{prefix}/consensus/{name}_aligned.fa"
     shell:
-        "mafft {input} > {output}"
+        "mafft  --globalpair --maxiterate 500 {input} > {output}"
 
 rule consensus:
     input:
@@ -54,8 +62,8 @@ rule map_to_consensus:
         "{prefix}/mapped/{samples}.sam"
     shell:
         """
-        name=`grep {wildcards.samples} {config[table]} | awk '{{print $3}}'`
-        bwa mem -p {config[output_dir]}/consensus/${{name::-1}}_consensus.fa {input.reads} > {output}
+        name=`grep {wildcards.samples} {config[table]} | awk '{{print $2}}'`
+        bwa mem -p {config[output_dir]}/consensus/${{name}}_consensus.fa {input.reads} > {output}
         """
 
 rule configure_predicthaplo:
@@ -68,10 +76,10 @@ rule configure_predicthaplo:
         """
         cp {input.dummy} {output}
         sed -i "s|prefix_line|{config[output_dir]}/predicthaplo/output_{wildcards.samples}/{wildcards.samples}|" {output}
-        name=`grep {wildcards.samples} {config[table]} | awk '{{print $3}}'`
-        sed -i "s|reference_line|{config[output_dir]}/consensus/${{name::-1}}_consensus.fa|" {output}
+        name=`grep {wildcards.samples} {config[table]} | awk '{{print $2}}'`
+        sed -i "s|reference_line|{config[output_dir]}/consensus/${{name}}_consensus.fa|" {output}
         sed -i "s|reads_line|{input.sample}|" {output}
-        sed -i "s|true_haplotypes_line|{config[output_dir]}/consensus/${{name::-1}}_aligned.fa|" {output}
+        sed -i "s|true_haplotypes_line|{config[output_dir]}/consensus/${{name}}_aligned.fa|" {output}
         """
 
 rule predicthaplo:
