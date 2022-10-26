@@ -6,11 +6,10 @@ SAMPLES, = glob_wildcards(config['haplohiv_folder']+"ec/{id}.fastq")
 REPLICATES, = glob_wildcards(config['output_dir']+"/consensus/consensusses_{id}.txt")
 
 rule all:
-    input:
-#        expand("{prefix}/mapped/{samples}.sam", prefix=config['output_dir'], samples=SAMPLES)        
+    input:      
         expand("{prefix}/haplotypes/{samples}_haplotypes.fa", prefix=config['output_dir'], samples=SAMPLES)
 
-
+#Concatenate sample consensus sequences
 rule concatenate:
     input:
         "{prefix}/consensus/consensusses_{name}.txt"
@@ -22,6 +21,7 @@ rule concatenate:
         cat $files > {output}
         """ 
 
+#Dealign sequences
 rule dealign:
     input:
         "{prefix}/consensus/{name}_concat.fa"
@@ -30,6 +30,7 @@ rule dealign:
     shell:
         "seqkit seq -g {input} > {output}" 
 
+#Align sample consensus sequences
 rule align:
     input:
         "{prefix}/consensus/{name}_dealigned.fa"
@@ -38,6 +39,7 @@ rule align:
     shell:
         "mafft  --globalpair --maxiterate 500 {input} > {output}"
 
+#Create a consensus of the sample consensus sequences
 rule consensus:
     input:
         "{prefix}/consensus/{name}_aligned.fa"
@@ -55,6 +57,7 @@ rule consensus:
         bwa index {output}
         """
 
+#Map error corrected reads to the new consensus
 rule map_to_consensus:
     input:
         reads = config['haplohiv_folder']+"ec/{samples}.fastq",
@@ -67,6 +70,7 @@ rule map_to_consensus:
         bwa mem -p {config[output_dir]}/consensus/${{name}}_consensus.fa {input.reads} > {output}
         """
 
+#Configure PredictHaplo settings
 rule configure_predicthaplo:
     input:
         dummy = "PredictHaplo.conf",
@@ -83,6 +87,7 @@ rule configure_predicthaplo:
         sed -i "s|true_haplotypes_line|{config[output_dir]}/consensus/${{name}}_aligned.fa|" {output}
         """
 
+#Run PredictHaplo
 rule predicthaplo:
     input:
         "{prefix}/predicthaplo/{samples}.conf"
@@ -94,6 +99,7 @@ rule predicthaplo:
         mv {input} {output}
         """
 
+#Retrieve haplotype sequences and frequencies from the PredictHaplo output
 rule gather_haplotype:
     input:
         "{prefix}/predicthaplo/output_{samples}/{samples}.conf"
